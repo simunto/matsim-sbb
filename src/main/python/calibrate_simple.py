@@ -28,6 +28,12 @@ def filter_modes(df):
     return df[df.main_mode.isin(modes)]
 
 
+def cli(jvm_args, jar, config, params_path, run_dir, trial_number, run_args):
+    return "java %s -jar %s %s %s --config:controler.runId %03d --params %s %s" % (
+        jvm_args, jar, config, run_dir, trial_number, params_path, run_args
+    )
+
+
 study, obj = create_calibration("calib",
                                 ASCCalibrator(modes, initial, target,
                                               lr=utils.linear_scheduler(start=0.5, interval=10)),
@@ -35,7 +41,7 @@ study, obj = create_calibration("calib",
                                 "../../../sim/0.01-ref-2020/config_scoring_parsed.xml",
                                 args="",
                                 jvm_args="-Xmx12G -Xmx12G -XX:+AlwaysPreTouch -XX:+UseParallelGC",
-                                custom_cli=utils.cli_oldstyle(),
+                                custom_cli=cli,
                                 transform_trips=filter_modes,
                                 chain_runs=True, debug=True)
 
