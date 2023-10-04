@@ -102,8 +102,9 @@ public class RunSBB {
 
 	public static void addSBBDefaultScenarioModules(Scenario scenario) {
 		LinkToFacilityAssigner.run(scenario.getActivityFacilities(), scenario.getNetwork(), scenario.getConfig());
-		NetworkMerger.mergeTransitNetworkFromSupplyConfig(scenario);
+		SBBXY2LinksAssigner.run(scenario.getPopulation(), scenario.getNetwork(), scenario.getConfig().network());
 		LinkToStationsAssigner.runAssignment(scenario);
+		NetworkMerger.mergeTransitNetworkFromSupplyConfig(scenario);
 		PrepareActivitiesInPlans.overwriteActivitiesInPlans(scenario.getPopulation());
 		createInitialEndTimeAttribute(scenario.getPopulation());
 		ZonesModule.addZonestoScenario(scenario);
@@ -133,8 +134,8 @@ public class RunSBB {
 				addPlanStrategyBinding(DefaultPlanStrategiesModule.DefaultStrategy.SubtourModeChoice).toProvider(SBBSubtourModeChoice.class);
 				bind(PermissibleModesCalculator.class).to(SBBPermissibleModesCalculator.class).asEagerSingleton();
 				bind(RailTripsAnalyzer.class);
-				bind(RailDemandMatrixAggregator.class);
-				bind(RailDemandReporting.class);
+                bind(DemandAggregator.class);
+                bind(RailDemandReporting.class);
 				bind(PtLinkVolumeAnalyzer.class);
 				bind(PutSurveyWriter.class);
 				bind(TripsAndDistanceStats.class);

@@ -25,7 +25,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
+
+import jakarta.inject.Inject;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.IdMap;
 import org.matsim.api.core.v01.Scenario;
@@ -44,9 +45,9 @@ public class IterationLinkAnalyzer implements LinkEnterEventHandler, VehicleEnte
     @Inject
     private Scenario scenario;
 
-    enum VehicleType {freight, car, ride}
+    enum AnalysisVehicleType {freight, car, ride, bike}
     private final IdMap<Link, CarLinkAnalysis.LinkStorage> countPerLink = new IdMap<>(Link.class);
-    private Map<Id<Vehicle>, VehicleType> identification = new HashMap<>();
+    private Map<Id<Vehicle>, AnalysisVehicleType> identification = new HashMap<>();
 
     public IterationLinkAnalyzer() {
     }
@@ -80,13 +81,13 @@ public class IterationLinkAnalyzer implements LinkEnterEventHandler, VehicleEnte
 
         // Check if the vehicle is a Lkw
         if (event.getPersonId().toString().contains("drt") || !scenario.getPopulation().getPersons().get(event.getPersonId()).getAttributes().getAttribute("subpopulation").toString().contains(Variables.FREIGHT_ROAD)) {
-            linkStorage.increase(VehicleType.car);
+            linkStorage.increase(AnalysisVehicleType.car);
             countPerLink.put(linkId, linkStorage);
-            identification.put(event.getVehicleId(), VehicleType.car);
+            identification.put(event.getVehicleId(), AnalysisVehicleType.car);
         } else {
-            linkStorage.increase(VehicleType.freight);
+            linkStorage.increase(AnalysisVehicleType.freight);
             countPerLink.put(linkId, linkStorage);
-            identification.put(event.getVehicleId(), VehicleType.freight);
+            identification.put(event.getVehicleId(), AnalysisVehicleType.freight);
         }
     }
 

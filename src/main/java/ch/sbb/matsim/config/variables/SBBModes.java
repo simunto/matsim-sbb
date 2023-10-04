@@ -19,6 +19,8 @@ public class SBBModes {
 	public static final String RIDEFEEDER = "ride_feeder";
 	public static final String CARFEEDER = "car_feeder";
 	public static final String DRT = TransportMode.drt;
+	public static final String RAIL = "rail";
+	public static final String FQRAIL = "fqrail";
 	public static final String PT_FALLBACK_MODE = TransportMode.transit_walk;
 	public static final String ACCESS_EGRESS_WALK = TransportMode.walk;
 	public static final String WALK_MAIN_MAINMODE = "walk_main";
@@ -30,7 +32,8 @@ public class SBBModes {
 
 	public static final List<String> MAIN_MODES = List.of(RIDE, CAR, PT, BIKE, AVTAXI, WALK_FOR_ANALYSIS, DRT);
 	public static final List<String> TRAIN_STATION_MODES = List.of(AVFEEDER, CARFEEDER, RIDEFEEDER, BIKEFEEDER, WALK_FOR_ANALYSIS, PT_FALLBACK_MODE, PT, PTSubModes.RAIL, PTSubModes.BUS, PTSubModes.OTHER, PTSubModes.TRAM, DRT);
-	public static final List<String> TRAIN_FEEDER_MODES = List.of(AVFEEDER, CARFEEDER, RIDEFEEDER, BIKEFEEDER);
+	public static final List<String> TRAIN_STATION_ORIGDEST_MODES = List.of(AVFEEDER, CARFEEDER, RIDEFEEDER, BIKEFEEDER, WALK_FOR_ANALYSIS, PT_FALLBACK_MODE, PTSubModes.BUS, PTSubModes.OTHER, PTSubModes.TRAM, DRT);
+	public static final List<String> TRAIN_FEEDER_MODES = List.of(WALK_FOR_ANALYSIS, AVFEEDER, CARFEEDER, RIDEFEEDER, BIKEFEEDER, PTSubModes.RAIL, PTSubModes.BUS, PTSubModes.OTHER, PTSubModes.TRAM);
 
 	static {
 		mode2HierarchalNumber = new HashMap<>();

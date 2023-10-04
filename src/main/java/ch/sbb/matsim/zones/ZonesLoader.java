@@ -2,16 +2,17 @@ package ch.sbb.matsim.zones;
 
 import ch.sbb.matsim.config.ZonesListConfigGroup;
 import ch.sbb.matsim.config.variables.Variables;
-import java.io.File;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Locale;
 import org.apache.logging.log4j.LogManager;
 import org.matsim.api.core.v01.Id;
 import org.matsim.core.config.Config;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.utils.gis.ShapeFileReader;
 import org.opengis.feature.simple.SimpleFeature;
+
+import java.io.File;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Locale;
 
 /**
  * Loads all zones specified in the configuration.
@@ -29,10 +30,11 @@ public final class ZonesLoader {
 		for (ZonesListConfigGroup.ZonesParameterSet group : zonesConfig.getZones()) {
 			String id = group.getId();
 			URL filenameURL = group.getFilenameURL(config.getContext());
+			String filenameString = group.getFilename();
 			String idAttribute = group.getIdAttributeName();
-			Zones zones = loadZones(id, filenameURL, idAttribute);
+			Zones zones = loadZones(id, filenameURL, filenameString, idAttribute);
 			zonesCollection.addZones(zones);
-        }
+		}
     }
 
     public static Zones loadZones(String id, String filename, String idAttribute) {
@@ -43,19 +45,19 @@ public final class ZonesLoader {
 		throw new RuntimeException("Unsupported format for zones-file " + filename);
 	}
 
-    public static Zones loadZones(String id, String filename) {
-        return loadZones(id, filename, Variables.ZONE_ID);
-    }
+	public static Zones loadZones(String id, String filename) {
+		return loadZones(id, filename, Variables.ZONE_ID);
+	}
 
-    public static Zones loadZones(String id, URL filenameURL, String idAttribute) {
-        try {
-            String filename = new File(filenameURL.toURI()).getAbsolutePath();
-            return loadZones(id, filename, idAttribute);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+	public static Zones loadZones(String id, URL filenameURL, String fileNameString, String idAttribute) {
+		try {
+			String filename = new File(filenameURL.toURI()).getAbsolutePath();
+			return loadZones(id, filename, idAttribute);
+		} catch (URISyntaxException e) {
+			return loadZones(id, fileNameString, idAttribute);
+		}
 
-    }
+	}
 
 	private static Zones loadZonesFromShapefile(String id, String filename, String idAttribute) {
 		boolean noZoneId = idAttribute == null || idAttribute.isEmpty();

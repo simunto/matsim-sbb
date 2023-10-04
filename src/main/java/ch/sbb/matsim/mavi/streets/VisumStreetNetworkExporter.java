@@ -1,5 +1,7 @@
 package ch.sbb.matsim.mavi.streets;
 
+import ch.sbb.matsim.config.variables.SBBModes;
+import ch.sbb.matsim.config.variables.Variables;
 import ch.sbb.matsim.counts.VisumToCounts;
 import ch.sbb.matsim.mavi.PolylinesCreator;
 import com.jacob.activeX.ActiveXComponent;
@@ -10,51 +12,45 @@ import org.apache.logging.log4j.Logger;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Scenario;
-import org.matsim.api.core.v01.network.*;
+import org.matsim.api.core.v01.network.Link;
+import org.matsim.api.core.v01.network.Network;
+import org.matsim.api.core.v01.network.NetworkFactory;
+import org.matsim.api.core.v01.network.Node;
 import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.network.NetworkUtils;
 import org.matsim.core.scenario.ScenarioUtils;
+import org.matsim.core.utils.collections.Tuple;
 import org.matsim.core.utils.geometry.CoordUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 public class VisumStreetNetworkExporter {
 
-    private final static Logger log = LogManager.getLogger(VisumStreetNetworkExporter.class);
-
-    private Scenario scenario;
-    private NetworkFactory nf;
-    private final Map<Id<Link>, String> wktLineStringPerVisumLink = new HashMap<>();
-
-    public static void main(String[] args) throws IOException {
-        String inputvisum = args[0];
-        String outputPath = args[1];
-        int visumVersion = 21;
-        boolean exportCounts = true;
-        if (args.length > 2) {
-            exportCounts = Boolean.parseBoolean(args[2]);
-        }
-
-		VisumStreetNetworkExporter exp = new VisumStreetNetworkExporter();
-		exp.run(inputvisum, outputPath, visumVersion, exportCounts, true);
-		exp.writeNetwork(outputPath);
-
-	}
+	public static final Set fullModeset = Set.of(SBBModes.CAR, SBBModes.RIDE, SBBModes.BIKE);
+	public static final Set<String> modeSetWithoutBike = Set.of(SBBModes.CAR, SBBModes.RIDE);
+	public static final Set<String> modeSetBikeOnly = Set.of(SBBModes.BIKE);
+	private final static Logger log = LogManager.getLogger(VisumStreetNetworkExporter.class);
+	private final Map<Id<Link>, String> wktLineStringPerVisumLink = new HashMap<>();
+	private Scenario scenario;
+	private NetworkFactory nf;
 
 	public static Id<Link> createLinkId(String fromNode, String visumLinkId) {
 		return Id.createLinkId(Integer.toString(Integer.parseInt(fromNode), 36) + "_" + Integer.toString(Integer.parseInt(visumLinkId), 36));
 	}
 
-	public static Integer extractVisumLinkId(Id<Link> linkId) {
-		Integer result = null;
+	public static Tuple<Integer, Integer> extractVisumNodeAndLinkId(Id<Link> linkId) {
 		try {
-			result = Integer.parseInt(linkId.toString().split("_")[1], 36);
+			int visumFromNodeId = Integer.parseInt(linkId.toString().split("_")[0], 36);
+			int visumLinkId = Integer.parseInt(linkId.toString().split("_")[1], 36);
+			return Tuple.of(visumFromNodeId, visumLinkId);
 		} catch (NumberFormatException e) {
-
+			return null;
 		}
-		return result;
 	}
 
 	public void run(String inputvisum, String outputPath, int visumVersion, boolean exportCounts, boolean exportPolylines) throws IOException {
@@ -72,17 +68,17 @@ public class VisumStreetNetworkExporter {
 		if (exportCounts) {
 			this.exportCountStations(visum, outputPath);
 		}
-		String[][] nodes = importNodes(net, "No", "XCoord", "YCoord");
+		String[][] nodes = importNodes(net, "No", "XCoord", "YCoord", "ZCoord");
 		String[][] links = importLinks(net, "FromNodeNo", "ToNodeNo", "Length", "CapPrT", "V0PrT", "TypeNo",
-				"NumLanes", "TSysSet", "accessControlled", "WKTPoly", "No");
+				"NumLanes", "TSysSet", Variables.ACCESS_CONTROLLED, "WKTPoly", "No");
 		createNetwork(nodes, links);
-
 		// Export Polylines
 		if (exportPolylines) {
 			new PolylinesCreator().runStreets(this.scenario.getNetwork(), wktLineStringPerVisumLink, "polylines.csv", outputPath);
 		}
 
 	}
+
 
 	private void exportCountStations(Dispatch net, String outputFolder) throws IOException {
 		VisumToCounts visumToCounts = new VisumToCounts();
@@ -125,16 +121,27 @@ public class VisumStreetNetworkExporter {
 	private void createNetwork(String[][] attarraynode, String[][] attarraylink) {
 		Network network = this.scenario.getNetwork();
 		network.setCapacityPeriod(3600);
-
+		double sumOfZCoords = Arrays.stream(attarraynode).mapToDouble(s -> Double.parseDouble(s[3])).sum();
+		boolean threeDimensionalNetwork = true;
+		if (sumOfZCoords < 1.) {
+			threeDimensionalNetwork = false;
+			log.warn("Network is two-dimensional, will not set any zcoords");
+		}
 		for (String[] anAttarraynode : attarraynode) {
-			Coord coord = new Coord(Double.parseDouble(anAttarraynode[1]),
-					Double.parseDouble(anAttarraynode[2]));
+			double x = Double.parseDouble(anAttarraynode[1]);
+			double y = Double.parseDouble(anAttarraynode[2]);
+			double z = Double.parseDouble(anAttarraynode[3]);
+			Coord coord = threeDimensionalNetwork ? new Coord(x, y, z) : new Coord(x, y);
 			Node node = nf.createNode(Id.createNodeId("C_" + anAttarraynode[0]), coord);
 			network.addNode(node);
 		}
 
+		boolean carAllowed;
+		boolean bikeAllowed;
 		for (String[] anAttarraylink : attarraylink) {
-			if (anAttarraylink[7].contains("P")) {
+			carAllowed = (anAttarraylink[7].contains("P"));
+			bikeAllowed = (anAttarraylink[7].contains("V"));
+			if (carAllowed | bikeAllowed) {
 				final String fromNode = anAttarraylink[0];
 				final String toNode = anAttarraylink[1];
 				final String visumLinkNo = anAttarraylink[10];
@@ -144,13 +151,23 @@ public class VisumStreetNetworkExporter {
 						Integer.parseInt(anAttarraylink[6]));
 				if (link != null) {
 					NetworkUtils.setType(link, anAttarraylink[5]);
-					int ac = 0;
+					int ac;
 					try {
 						ac = Integer.parseInt(anAttarraylink[8]);
 					} catch (NumberFormatException e) {
-						log.warn("Access Control not defined for link " + link.getId() + ". Assuming = 0");
+						log.warn("Access Control not defined for link " + link.getId() + ". Assuming = 1");
+						ac = 1;
 					}
-					link.getAttributes().putAttribute("accessControlled", ac);
+					link.getAttributes().putAttribute(Variables.ACCESS_CONTROLLED, ac);
+					if (ac == 1) {
+						if (carAllowed) {
+							link.setAllowedModes(modeSetWithoutBike);
+						}
+					} else if (!carAllowed) {
+						link.setAllowedModes(modeSetBikeOnly);
+					} else {
+						link.setAllowedModes(fullModeset);
+					}
 					network.addLink(link);
 				}
 				this.wktLineStringPerVisumLink.put(id, anAttarraylink[9]);
@@ -165,7 +182,7 @@ public class VisumStreetNetworkExporter {
 		if (fnode == null || tnode == null) {
 			return null;
 		}
-		Set<String> modeset = new HashSet<>(Arrays.asList("car", "ride"));
+
 		Link link = nf.createLink(id, fnode, tnode);
 		if (length < 0.01) {
 			length = 0.01;
@@ -179,25 +196,17 @@ public class VisumStreetNetworkExporter {
 			if (beelineDistance - length > 1.0) {
 				log.warn(link.getId() + " has a length (" + length + ") shorter than its beeline distance (" + beelineDistance + "). Will not correct this.");
 			}
-        }
-        link.setLength(length);
-        link.setCapacity(cap);
-        link.setFreespeed(v / 3.6);
-        link.setNumberOfLanes(numlanes);
-        link.setAllowedModes(modeset);
+		}
+		link.setLength(length);
+		link.setCapacity(cap);
+		link.setFreespeed(v / 3.6);
+		link.setNumberOfLanes(numlanes);
+		link.setAllowedModes(fullModeset);
 
-        return link;
-    }
+		return link;
+	}
 
-    private void writeNetwork(String outputFolder) {
-        org.matsim.core.network.algorithms.NetworkCleaner cleaner = new org.matsim.core.network.algorithms.NetworkCleaner();
-        cleaner.run(scenario.getNetwork());
-
-        File file = new File(outputFolder, "network.xml.gzwithPolylines.xml.gz");
-        new NetworkWriter(this.scenario.getNetwork()).write(file.getAbsolutePath());
-    }
-
-    public Network getNetwork() {
-        return scenario.getNetwork();
-    }
+	public Network getNetwork() {
+		return scenario.getNetwork();
+	}
 }

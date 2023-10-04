@@ -25,6 +25,8 @@ import ch.sbb.matsim.routing.access.AccessEgressModule;
 import ch.sbb.matsim.zones.Zone;
 import ch.sbb.matsim.zones.Zones;
 import ch.sbb.matsim.zones.ZonesCollection;
+import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import org.matsim.api.core.v01.Id;
 import org.matsim.api.core.v01.Identifiable;
 import org.matsim.api.core.v01.network.Link;
@@ -42,8 +44,6 @@ import org.matsim.pt.transitSchedule.api.TransitRoute;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.pt.transitSchedule.api.TransitStopFacility;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -72,11 +72,13 @@ public class RailTripsAnalyzer {
                 .filter(transitStopFacility -> String.valueOf(transitStopFacility.getAttributes().getAttribute(Variables.FQ_RELEVANT)).equals("1"))
                 .map(Identifiable::getId)
                 .collect(Collectors.toSet());
-        railStops = schedule.getFacilities().values()
-                .stream()
-                .filter(transitStopFacility -> getTransitLinesAndRoutesAtStop(transitStopFacility.getId()).keySet().stream().anyMatch(p -> railLines.contains(p)))
-                .map(Identifiable::getId)
+        railStops = railLines.stream()
+                .flatMap(lid -> schedule.getTransitLines().get(lid).getRoutes().values().stream())
+                .filter(transitRoute -> transitRoute.getTransportMode().equals(PTSubModes.RAIL))
+                .flatMap(transitRoute -> transitRoute.getStops().stream())
+                .map(transitRouteStop -> transitRouteStop.getStopFacility().getId())
                 .collect(Collectors.toSet());
+
         swissRailStops = railStops.stream()
                 .map(id -> schedule.getFacilities().get(id))
                 .filter(stop -> {
@@ -154,6 +156,45 @@ public class RailTripsAnalyzer {
         }
 
         return tuple;
+    }
+
+    public RailTravelInfo getRailTravelInfo(Trip trip) {
+        Id<TransitStopFacility> firstStop = null;
+        Id<TransitStopFacility> lastStop = null;
+        double railDistance = 0.;
+        double travelTime = 0.;
+        int numberOfTransfers = 0;
+        boolean lastLegWasRail = false;
+        for (Leg leg : trip.getLegsOnly()) {
+            if (leg.getRoute() instanceof TransitPassengerRoute) {
+                TransitPassengerRoute route = (TransitPassengerRoute) leg.getRoute();
+                if (railLines.contains(route.getLineId())) {
+                    if (lastLegWasRail) {
+                        numberOfTransfers++;
+                    }
+                    lastLegWasRail = true;
+                } else {
+                    lastLegWasRail = false;
+                }
+
+                if (railLines.contains(route.getLineId())) {
+                    if (firstStop == null) {
+                        firstStop = route.getAccessStopId();
+
+                    }
+                    lastStop = route.getEgressStopId();
+                    railDistance += route.getDistance();
+                    travelTime += route.getTravelTime().seconds();
+                }
+            }
+        }
+        if (firstStop != null && lastStop != null) {
+            return new RailTravelInfo(firstStop, lastStop, travelTime, railDistance, numberOfTransfers);
+        } else return null;
+    }
+
+    public record RailTravelInfo(Id<TransitStopFacility> fromStation, Id<TransitStopFacility> toStation,
+                                 double railTravelTime, double distance, int numberOfTransfers) {
     }
 
 

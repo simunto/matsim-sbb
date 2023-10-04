@@ -22,13 +22,12 @@ import org.matsim.core.controler.listener.StartupListener;
 
 public class SBBDefaultAnalysisListener implements IterationEndsListener, StartupListener {
 
-    private final Scenario scenario;
     private final OutputDirectoryHierarchy controlerIO;
     private final ControlerConfigGroup config;
     private final PostProcessingConfigGroup ppConfig;
 
     @Inject
-    private RailDemandMatrixAggregator railDemandMatrixAggregator;
+    private DemandAggregator demandAggregator;
 
     @Inject
     private RailDemandReporting railDemandReporting;
@@ -58,7 +57,6 @@ public class SBBDefaultAnalysisListener implements IterationEndsListener, Startu
             final PostProcessingConfigGroup ppConfig,
             IterationLinkAnalyzer iterationLinkAnalyzer
     ) {
-        this.scenario = scenario;
         this.controlerIO = controlerIO;
         this.config = config;
         this.ppConfig = ppConfig;
@@ -86,14 +84,21 @@ public class SBBDefaultAnalysisListener implements IterationEndsListener, Startu
             if (((interval > 0) && (event.getIteration() % interval == 0)) || event.getIteration() == this.config.getLastIteration()) {
                 String railDemandAggregateFilename = event.getIteration() == this.config.getLastIteration() ? controlerIO.getOutputFilename("railDemandAggregate.csv")
                         : controlerIO.getIterationFilename(event.getIteration(), "railDemandAggregate.csv");
-                railDemandMatrixAggregator.aggregateAndWriteMatrix(scalefactor, railDemandAggregateFilename);
-                String ptLinkUsageFilename = event.getIteration() == this.config.getLastIteration() ? controlerIO.getOutputFilename("ptlinkvolumes")
-                        : controlerIO.getIterationFilename(event.getIteration(), "ptlinkvolumes");
-                ptLinkVolumeAnalyzer.writePtLinkUsage(ptLinkUsageFilename, scenario.getConfig().controler().getRunId(), scalefactor);
+                String railDemandStationToStation = event.getIteration() == this.config.getLastIteration() ? controlerIO.getOutputFilename("railDemandStationToStation.csv.gz")
+                        : controlerIO.getIterationFilename(event.getIteration(), "railDemandStationToStation.csv.gz");
+                String tripsPerMunFile = event.getIteration() == this.config.getLastIteration() ? controlerIO.getOutputFilename("tripsPerMun.csv.gz")
+                        : controlerIO.getIterationFilename(event.getIteration(), "tripsPerMun.csv.gz");
+                String tripsPerMSRFile = event.getIteration() == this.config.getLastIteration() ? controlerIO.getOutputFilename("tripsPerMSR.csv.gz")
+                        : controlerIO.getIterationFilename(event.getIteration(), "tripsPerMSR.csv.gz");
+
+                demandAggregator.aggregateAndWriteMatrix(scalefactor, railDemandAggregateFilename, railDemandStationToStation, tripsPerMunFile, tripsPerMSRFile);
+                String ptLinkUsageFilename = event.getIteration() == this.config.getLastIteration() ? controlerIO.getOutputFilename("ptlinkvolumes.att")
+                        : controlerIO.getIterationFilename(event.getIteration(), "ptlinkvolumes.att");
+                ptLinkVolumeAnalyzer.writePtLinkUsage(ptLinkUsageFilename, scalefactor);
                 putSurveyWriter.collectAndWritePUTSurvey(putSurveyNew);
                 String carVolumesName = event.getIteration() == this.config.getLastIteration() ? controlerIO.getOutputFilename("car_volumes.att")
                         : controlerIO.getIterationFilename(event.getIteration(), "car_volumes.att");
-                carLinkAnalysis.writeSingleIterationCarStats(carVolumesName);
+                carLinkAnalysis.writeSingleIterationStreetStats(carVolumesName);
                 String tripsAndDistanceStatsName = event.getIteration() == this.config.getLastIteration() ? controlerIO.getOutputFilename("trips_distance_stats.csv")
                         : controlerIO.getIterationFilename(event.getIteration(), "trips_distance_stats.csv");
                 String fullTripsAndDistanceStatsName = event.getIteration() == this.config.getLastIteration() ? controlerIO.getOutputFilename("trips_distance_stats_full.csv")
