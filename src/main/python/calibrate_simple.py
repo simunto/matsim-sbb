@@ -37,7 +37,7 @@ def cli(jvm_args, jar, config, params_path, run_dir, trial_number, run_args):
 study, obj = create_calibration("calib",
                                 ASCCalibrator(modes, initial, target,
                                               lr=utils.linear_scheduler(start=0.5, interval=10)),
-                                "../../../sim/0.01-ref-2020/matsim-sbb-4.0.5-jar-with-dependencies.jar",
+                                "../../../target/matsim-sbb-4.0.6-SNAPSHOT-jar-with-dependencies.jar",
                                 "../../../sim/0.01-ref-2020/config_scoring_parsed.xml",
                                 args="",
                                 jvm_args="-Xmx12G -Xmx12G -XX:+AlwaysPreTouch -XX:+UseParallelGC",

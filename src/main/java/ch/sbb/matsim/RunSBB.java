@@ -34,6 +34,7 @@ import ch.sbb.matsim.utils.ScenarioConsistencyChecker;
 import ch.sbb.matsim.vehicles.CreateVehiclesFromType;
 import ch.sbb.matsim.zones.ZonesModule;
 import com.google.inject.Provides;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.matsim.analysis.TripsAndLegsCSVWriter;
@@ -43,6 +44,7 @@ import org.matsim.api.core.v01.population.Activity;
 import org.matsim.api.core.v01.population.Person;
 import org.matsim.api.core.v01.population.Plan;
 import org.matsim.api.core.v01.population.Population;
+import org.matsim.application.MATSimApplication;
 import org.matsim.contrib.parking.parkingcost.config.ParkingCostConfigGroup;
 import org.matsim.contrib.parking.parkingcost.module.ParkingCostModule;
 import org.matsim.core.config.Config;
@@ -61,7 +63,10 @@ import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.scoring.ScoringFunctionFactory;
 import org.matsim.core.utils.misc.OptionalTime;
 
+import java.lang.reflect.Method;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,7 +78,7 @@ public class RunSBB {
 
 	private static final Logger log = LogManager.getLogger(RunSBB.class);
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws ReflectiveOperationException {
 		System.setProperty("matsim.preferLocalDtds", "true");
 
 		final String configFile = args[0];
@@ -83,6 +88,26 @@ public class RunSBB {
 		if (args.length > 1) {
 			config.controler().setOutputDirectory(args[1]);
 		}
+
+		if (args.length > 2) {
+
+			String[] remainingArgs = Arrays.stream(args)
+					.skip(2)
+					.map(s -> s.replace("-c:", "--config:"))
+					.toArray(String[]::new);
+
+			ConfigUtils.applyCommandline(config, remainingArgs);
+
+			int idx = ArrayUtils.indexOf(args, "--params");
+			if (idx > -1) {
+
+				// TODO: workaround to use private function, needs to be made public if stable
+				Method m = MATSimApplication.class.getDeclaredMethod("applySpecs", Config.class, Path.class);
+				m.setAccessible(true);
+				m.invoke(null, config, Path.of(args[idx + 1]));
+			}
+		}
+
 
 		run(config);
 	}
