@@ -101,6 +101,22 @@ public class RunSBB {
 			int idx = ArrayUtils.indexOf(args, "--params");
 			if (idx > -1) {
 
+				SBBBehaviorGroupsConfigGroup bgs = ConfigUtils.addOrGetModule(config, SBBBehaviorGroupsConfigGroup.class);
+
+				// Ensure that mode correction is present for all calibrated modes
+				for (SBBBehaviorGroupsConfigGroup.BehaviorGroupParams bg : bgs.getBehaviorGroupParams().values()) {
+					for (SBBBehaviorGroupsConfigGroup.PersonGroupValues values : bg.getPersonGroupByAttribute().values()) {
+						for (String m : List.of("car", "ride", "pt", "bike")) {
+							if (!values.getModeCorrectionParams().containsKey(m)) {
+								SBBBehaviorGroupsConfigGroup.ModeCorrection c = new SBBBehaviorGroupsConfigGroup.ModeCorrection();
+								c.setMode(m);
+								values.addModeCorrection(c);
+							}
+
+						}
+					}
+				}
+
 				// TODO: workaround to use private function, needs to be made public if stable
 				Method m = MATSimApplication.class.getDeclaredMethod("applySpecs", Config.class, Path.class);
 				m.setAccessible(true);
