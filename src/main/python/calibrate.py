@@ -3,7 +3,7 @@
 
 import pandas as pd
 
-from matsim.calibration import create_calibration, ASCGroupCalibrator, utils
+from matsim.calibration import create_calibration, ASCGroupCalibrator, utils, study_as_df
 
 # %%
 
@@ -59,6 +59,8 @@ study, obj = create_calibration("calib",
                                 transform_trips=filter_modes,
                                 chain_runs=True, debug=False)
 
-# %%
+study.optimize(obj, 3)
 
-study.optimize(obj, 5)
+
+df = study_as_df(study)
+df.to_csv("report.csv")
