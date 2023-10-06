@@ -10,11 +10,24 @@ from matsim.calibration import create_calibration, ASCGroupCalibrator, utils
 modes = ["walk", "car", "ride", "pt", "bike"]
 fixed_mode = "walk"
 initial = {
-    "bike": -0.141210,
-    "pt": 0.0781477780346438,
-    "car": 0.871977390743304,
-    "ride": -2.22873502992
+    "bike": -0.55,
+    "pt": -0.03,
+    "car": -0.15,
+    "ride": -0.94
 }
+
+
+# walk_main has 0.25 asc
+
+def filter_persons(df):
+    # Only regular persons are relevant
+    df = df[df.subpopulation == "regular"]
+
+    # Convert to correct types
+    df.current_edu.fillna("null", inplace=True)
+    df.car_available = df.car_available.astype("int").astype("string")
+
+    return df
 
 
 def filter_modes(df):
@@ -30,9 +43,11 @@ def cli(jvm_args, jar, config, params_path, run_dir, trial_number, run_args):
     )
 
 
+target = pd.read_csv("ref_data.csv", dtype={"car_available": "string"},
+                     na_values=["", "na"], keep_default_na=False)
+
 study, obj = create_calibration("calib",
-                                ASCGroupCalibrator(modes, initial,
-                                                   pd.read_csv("ref_data.csv", dtype={"car_available": "string"}),
+                                ASCGroupCalibrator(modes, initial, target,
                                                    config_format="sbb",
                                                    lr=utils.linear_scheduler(start=0.5, interval=10)),
                                 "../../../target/matsim-sbb-4.0.6-SNAPSHOT-jar-with-dependencies.jar",
@@ -40,8 +55,9 @@ study, obj = create_calibration("calib",
                                 args="",
                                 jvm_args="-Xmx12G -Xmx12G -XX:+AlwaysPreTouch -XX:+UseParallelGC",
                                 custom_cli=cli,
+                                transform_persons=filter_persons,
                                 transform_trips=filter_modes,
-                                chain_runs=True, debug=True)
+                                chain_runs=True, debug=False)
 
 # %%
 
