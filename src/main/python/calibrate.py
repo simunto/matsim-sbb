@@ -59,7 +59,7 @@ study, obj = create_calibration("calib",
                                 transform_trips=filter_modes,
                                 chain_runs=True, debug=False)
 
-study.optimize(obj, 3)
+study.optimize(obj, 5)
 
 
 df = study_as_df(study)
