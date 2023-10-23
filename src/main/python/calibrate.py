@@ -57,10 +57,9 @@ study, obj = create_calibration("calib",
                                 custom_cli=cli,
                                 transform_persons=filter_persons,
                                 transform_trips=filter_modes,
-                                chain_runs=True, debug=False)
+                                chain_runs=utils.default_chain_scheduler, debug=False)
 
 study.optimize(obj, 5)
-
 
 df = study_as_df(study)
 df.to_csv("report.csv")

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from matsim.calibration import create_calibration, ASCCalibrator, utils
+from matsim.calibration import create_calibration, ASCCalibrator, utils, study_as_df
 
 # %%
 
@@ -23,6 +23,11 @@ target = {
 }
 
 
+def filter_persons(df):
+    # Only regular persons are relevant
+    return df[df.subpopulation == "regular"]
+
+
 def filter_modes(df):
     return df[df.main_mode.isin(modes)]
 
@@ -41,9 +46,13 @@ study, obj = create_calibration("calib",
                                 args="",
                                 jvm_args="-Xmx12G -Xmx12G -XX:+AlwaysPreTouch -XX:+UseParallelGC",
                                 custom_cli=cli,
+                                transform_persons=filter_persons,
                                 transform_trips=filter_modes,
-                                chain_runs=True, debug=True)
+                                chain_runs=utils.default_chain_scheduler, debug=False)
 
 # %%
 
 study.optimize(obj, 5)
+
+df = study_as_df(study)
+df.to_csv("report.csv")
