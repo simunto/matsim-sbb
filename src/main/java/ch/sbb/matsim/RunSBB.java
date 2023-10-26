@@ -106,6 +106,12 @@ public class RunSBB {
 				// Ensure that mode correction is present for all calibrated modes
 				for (SBBBehaviorGroupsConfigGroup.BehaviorGroupParams bg : bgs.getBehaviorGroupParams().values()) {
 					for (SBBBehaviorGroupsConfigGroup.PersonGroupValues values : bg.getPersonGroupByAttribute().values()) {
+
+						// All constant are reset
+						for (SBBBehaviorGroupsConfigGroup.ModeCorrection corr : values.getModeCorrectionParams().values()) {
+							corr.setConstant(0);
+						}
+
 						for (String m : List.of("car", "ride", "pt", "bike")) {
 							if (!values.getModeCorrectionParams().containsKey(m)) {
 								SBBBehaviorGroupsConfigGroup.ModeCorrection c = new SBBBehaviorGroupsConfigGroup.ModeCorrection();
