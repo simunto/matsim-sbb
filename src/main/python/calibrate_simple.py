@@ -8,10 +8,10 @@ from matsim.calibration import create_calibration, ASCCalibrator, utils, study_a
 modes = ["walk", "car", "ride", "pt", "bike"]
 fixed_mode = "walk"
 initial = {
-    "bike": -0.141210,
-    "pt": 0.0781477780346438,
-    "car": 0.871977390743304,
-    "ride": -2.22873502992
+    "bike": -0.55,
+    "pt": -0.03,
+    "car": -0.15,
+    "ride": -0.94
 }
 
 target = {
@@ -43,7 +43,7 @@ study, obj = create_calibration("calib",
                                               lr=utils.linear_scheduler(start=0.5, interval=10)),
                                 "../../../target/matsim-sbb-4.0.6-SNAPSHOT-jar-with-dependencies.jar",
                                 "../../../sim/0.01-ref-2020/config_scoring_parsed.xml",
-                                args="",
+                                args="--config:controler.lastIteration 400",
                                 jvm_args="-Xmx12G -Xmx12G -XX:+AlwaysPreTouch -XX:+UseParallelGC",
                                 custom_cli=cli,
                                 transform_persons=filter_persons,
