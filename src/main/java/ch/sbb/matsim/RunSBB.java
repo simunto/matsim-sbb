@@ -107,9 +107,10 @@ public class RunSBB {
 				for (SBBBehaviorGroupsConfigGroup.BehaviorGroupParams bg : bgs.getBehaviorGroupParams().values()) {
 					for (SBBBehaviorGroupsConfigGroup.PersonGroupValues values : bg.getPersonGroupByAttribute().values()) {
 
-						// All constant are reset
+						// All constant except for the fixed mode are reset
 						for (SBBBehaviorGroupsConfigGroup.ModeCorrection corr : values.getModeCorrectionParams().values()) {
-							corr.setConstant(0);
+							if (!corr.getMode().equals("walk_main"))
+                                corr.setConstant(0);
 						}
 
 						for (String m : List.of("car", "ride", "pt", "bike")) {
