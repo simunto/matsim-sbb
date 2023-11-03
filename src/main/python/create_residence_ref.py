@@ -72,4 +72,4 @@ if __name__ == "__main__":
         53
     ]
 
-    compute_grouped_share(df, groups).to_csv("ref_by_residence.csv")
+    compute_grouped_share(df, groups).to_csv("ref_by_residence.csv", index=False)

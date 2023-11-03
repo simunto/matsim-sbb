@@ -46,6 +46,11 @@ def cli(jvm_args, jar, config, params_path, run_dir, trial_number, run_args):
 target = pd.read_csv("ref_data.csv", dtype={"car_available": "string"},
                      na_values=["", "na"], keep_default_na=False)
 
+residence = pd.read_csv("ref_by_residence.csv")
+
+# Merge the residence groups into target
+target = pd.concat([target, residence])
+
 study, obj = create_calibration("calib",
                                 ASCGroupCalibrator(modes, initial, target,
                                                    config_format="sbb",
@@ -57,7 +62,7 @@ study, obj = create_calibration("calib",
                                 custom_cli=cli,
                                 transform_persons=filter_persons,
                                 transform_trips=filter_modes,
-                                chain_runs=utils.default_chain_scheduler, debug=False)
+                                chain_runs=utils.default_chain_scheduler, debug=True)
 
 study.optimize(obj, 5)
 

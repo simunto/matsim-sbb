@@ -29,6 +29,9 @@ def filter_persons(df):
 
 
 def filter_modes(df):
+    # walk_main will be just walk
+    df.loc[df.main_mode == "walk_main", "main_mode"] = "walk"
+
     return df[df.main_mode.isin(modes)]
 
 
