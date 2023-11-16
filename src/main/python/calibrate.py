@@ -46,6 +46,12 @@ def cli(jvm_args, jar, config, params_path, run_dir, trial_number, run_args):
 target = pd.read_csv("ref_data.csv", dtype={"car_available": "string"},
                      na_values=["", "na"], keep_default_na=False)
 
+car_available = target[target.car_available == "0"]
+car_available.loc[car_available.main_mode == "car", "share"] = 0
+
+# Set car share in ref to 0 because MATSim share will always be 0
+target.loc[target.car_available == "0", "share"] = car_available.share / car_available.share.sum()
+
 residence = pd.read_csv("ref_by_residence.csv")
 
 # Merge the residence groups into target
