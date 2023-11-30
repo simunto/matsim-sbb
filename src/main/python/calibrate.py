@@ -26,6 +26,7 @@ def filter_persons(df):
     # Convert to correct types
     df.current_edu.fillna("null", inplace=True)
     df.car_available = df.car_available.astype("int").astype("string")
+    df.residence_msr_id = df.residence_msr_id.astype("int").astype("string")
 
     return df
 
@@ -59,8 +60,9 @@ target = pd.concat([target, residence])
 
 study, obj = create_calibration("calib",
                                 ASCGroupCalibrator(modes, initial, target,
+                                                   multi_groups=["residence_msr_id"],
                                                    config_format="sbb",
-                                                   lr=utils.linear_scheduler(start=0.25, interval=10)),
+                                                   lr=utils.linear_scheduler(start=0.25, interval=20)),
                                 "../../../target/matsim-sbb-4.0.6-SNAPSHOT-jar-with-dependencies.jar",
                                 "../../../sim/0.01-ref-2020/config_scoring_parsed.xml",
                                 args="--config:controler.lastIteration 400",
