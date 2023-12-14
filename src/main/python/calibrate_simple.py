@@ -43,7 +43,7 @@ def cli(jvm_args, jar, config, params_path, run_dir, trial_number, run_args):
 
 study, obj = create_calibration("calib",
                                 ASCCalibrator(modes, initial, target,
-                                              lr=utils.linear_scheduler(start=0.25, interval=20)),
+                                              lr=utils.linear_scheduler(start=0.2, end=0.5, interval=20)),
                                 "../../../target/matsim-sbb-4.0.6-SNAPSHOT-jar-with-dependencies.jar",
                                 "../../../sim/0.01-ref-2020/config_scoring_parsed.xml",
                                 args="--config:controler.lastIteration 400",
